@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 # Set up the parameters for the backtest
 assets = ['BTC-USD', 'ETH-USD', 'ADA-USD', 'USDC-USD']  # Added USDC as a stable asset for stability
 start_date = '2020-01-01'
-end_date = '2021-01-01'
+end_date = '2023-10-01'
 initial_balance = 10000  # Starting portfolio balance
 low_volatility_threshold = 0.02
 high_volatility_threshold = 0.05
