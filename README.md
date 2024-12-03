@@ -136,15 +136,6 @@ CVaR (95%): -5.41%
 
 ---
 
-## Contributing
-
-Feel free to fork this repository and contribute by adding:
-- Additional models or indicators
-- Enhanced visualizations
-- Improved portfolio management techniques
-
----
-
 ## License
 
 This project is open-source and available under the MIT License.
