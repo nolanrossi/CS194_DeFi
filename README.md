@@ -2,7 +2,12 @@
 
 ## Overview
 
-This repository contains three distinct models for constructing and analyzing cryptocurrency portfolios based on different strategies and methodologies. The repository is designed to help users compare and evaluate the performance of these models under varying market conditions and portfolio constraints.
+This project presents a Python-based framework for managing cryptocurrency portfolios in the context of Decentralized Finance (DeFi). Unlike traditional stock portfolios, crypto portfolios must contend with higher volatility, rapid market shifts, and a unique set of liquidity and momentum characteristics. This codebase aims to address these challenges through adaptive volatility-based allocation, momentum filtering, and multi-factor approaches tailored specifically for the crypto market.
+
+Central to the philosophy of these strategies is the understanding that cryptocurrencies do not behave like traditional equities. Price dynamics can be more erratic, heavily influenced by market sentiment, protocol updates, regulatory news, and liquidity conditions unique to DeFi. While stock portfolios might rely on well-established risk models and historically stable correlations, crypto portfolios must incorporate dynamic tools that respond to high-frequency changes in volatility and momentum indicators. This code is designed with these distinctions in mind, providing strategies that adapt positions, maintain stablecoin buffers, and employ robust risk management metrics—such as drawdowns, Value at Risk (VaR), and Conditional VaR (CVaR)—more suited to the extreme conditions often observed in DeFi markets.
+
+Why It’s Unique to DeFi:
+These models rely on stablecoins and technical indicators suited for crypto’s high volatility. Traditional stock portfolios often trust in more stable volatility regimes and do not commonly integrate stable, on-chain assets for risk-off periods. The dynamic switching and volatility thresholds are far more critical in a DeFi environment than in most equity market strategies.
 
 ### Models Included:
 1. **Model 1: Threshold-Based Volatility Management**

@@ -1,6 +1,5 @@
 # compare_crypto_models.py
 
-# Import Necessary Libraries
 import pandas as pd
 import numpy as np
 import yfinance as yf
@@ -8,14 +7,11 @@ import matplotlib.pyplot as plt
 from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator
 
-# You may need to install the 'ta' library if you haven't already:
-# pip install ta
-
 # ================================
 # User-Defined Parameters
 # ================================
 
-# List of cryptocurrencies to analyze for each model
+#cryptocurrencies to analyze/include in each model
 cryptos_model1 = ['BTC-USD', 'ETH-USD', 'ADA-USD', 'USDC-USD']
 cryptos_model2 = ['BTC-USD', 'ETH-USD', 'BNB-USD', 'XRP-USD', 'ADA-USD']
 cryptos_model3 = [
@@ -23,27 +19,25 @@ cryptos_model3 = [
     'SOL-USD', 'DOT-USD', 'DOGE-USD', 'USDC-USD'
 ]
 
-# Define the time period for historical data (Adjust these to tweak market conditions)
-start_date = '2020-01-01'  # Start date of analysis
-end_date = '2023-10-01'    # End date of analysis
+#time period to model
+start_date = '2020-01-01'
+end_date = '2023-10-01'
 
 # Market condition parameters for Model 1
 low_volatility_threshold = 0.02
 high_volatility_threshold = 0.05
 min_cash_buffer = 0.1  # Maintain at least 10% cash buffer
 
-# Rebalancing frequency
-rebalance_frequency = 'W'  # Options: 'D' (Daily), 'W' (Weekly), 'M' (Monthly)
+#rebalancing
+rebalance_frequency = 'W'  # 'D' (Daily), 'W' (Weekly), 'M' (Monthly)
 
-# Initial portfolio balance
-initial_balance = 10000  # Starting portfolio balance
+#init
+initial_balance = 10000  # Starting balance
+max_position_size = 0.15  # maximum of portfolio per asset
+max_total_drawdown = 0.15  # Maximum portfolio drawdown
 
-# Maximum position size and total drawdown for Model 3
-max_position_size = 0.15  # Max 15% of portfolio per asset
-max_total_drawdown = 0.15  # Max 15% portfolio drawdown
-
-# ==================================
-# Function Definitions
+# ===================================
+# Functions
 # ==================================
 
 def get_data(assets, start_date, end_date):
@@ -58,11 +52,10 @@ def model1():
     assets = cryptos_model1.copy()
     data = get_data(assets, start_date, end_date)
     returns = data.pct_change().dropna()
-    volatility = returns.rolling(window=30).std() * np.sqrt(252)  # Annualized volatility
+    volatility = returns.rolling(window=30).std() * np.sqrt(252)
     short_sma = data.rolling(window=10).mean()
     long_sma = data.rolling(window=50).mean()
 
-    # Define the function for weight calculation
     def calculate_weights(volatility, data, short_sma, long_sma):
         weights = pd.DataFrame(index=volatility.index, columns=volatility.columns)
         for date in volatility.index:
@@ -86,22 +79,22 @@ def model1():
             weights.loc[date] = weight
         return weights
 
-    # Calculate weights
+    # weights
     weights = calculate_weights(volatility, data, short_sma, long_sma)
     weights = weights.ffill().fillna(0).infer_objects()
 
-    # Calculate portfolio returns
+    # portfolio returns
     portfolio_returns = (returns * weights.shift()).sum(axis=1)
     portfolio_value = (1 + portfolio_returns).cumprod() * initial_balance
 
-    # Performance Metrics
+    # performance Metrics
     rolling_max = portfolio_value.cummax()
     drawdown = (portfolio_value - rolling_max) / rolling_max
     sharpe_ratio = portfolio_returns.mean() / portfolio_returns.std() * np.sqrt(252)
     VaR_95 = portfolio_returns.quantile(0.05)
     CVaR_95 = portfolio_returns[portfolio_returns <= VaR_95].mean()
 
-    # Store results
+    #results
     results = {
         'Portfolio Value': portfolio_value,
         'Drawdown': drawdown,
@@ -127,11 +120,10 @@ def model2():
     weights = inv_volatility.div(inv_volatility.sum(axis=1), axis=0)
     weights = weights.ffill().fillna(0).infer_objects()
 
-    # Backtest portfolio
     portfolio_returns = (returns * weights.shift()).sum(axis=1)
     portfolio_value = (1 + portfolio_returns).cumprod() * initial_balance
 
-    # Performance Metrics
+    #performance Metrics
     cumulative_returns = (1 + portfolio_returns).cumprod()
     sharpe_ratio = portfolio_returns.mean() / portfolio_returns.std() * np.sqrt(252)
     max_drawdown = (cumulative_returns / cumulative_returns.cummax() - 1).min()
@@ -157,30 +149,29 @@ def model3():
     data = get_data(assets, start_date, end_date)
     returns = data.pct_change().dropna()
 
-    # Calculate Indicators
+    #indicators
     ema_short = data.apply(lambda x: EMAIndicator(close=x, window=12).ema_indicator())
     ema_long = data.apply(lambda x: EMAIndicator(close=x, window=26).ema_indicator())
     rsi = data.apply(lambda x: RSIIndicator(close=x, window=14).rsi())
 
-    # Initialize variables
     portfolio_value = pd.Series(index=returns.index)
     portfolio_value.iloc[0] = initial_balance
     weights_history = pd.DataFrame(index=returns.index, columns=assets)
     max_portfolio_value = initial_balance
     drawdown = pd.Series(index=returns.index)
 
-    # Rebalance dates
+    #rebalance intervals
     rebalance_dates = returns.resample(rebalance_frequency).last().index
 
-    # Set initial weights
+    #initial weights
     weights = pd.Series(0, index=assets)
     weights['USDC-USD'] = 1.0
     weights_history.iloc[0] = weights
 
     for i, date in enumerate(returns.index[1:], start=1):
         if date in rebalance_dates:
-            # Asset Selection
             selected_assets = []
+            #choose assets
             for asset in assets:
                 if asset == 'USDC-USD':
                     continue
@@ -190,7 +181,7 @@ def model3():
                     continue
                 if ema_short.loc[date, asset] > ema_long.loc[date, asset] and rsi.loc[date, asset] > 55:
                     selected_assets.append(asset)
-            # Calculate Weights
+            # weights
             if selected_assets:
                 vol = returns[selected_assets].rolling(window=14).std().loc[date]
                 inv_vol = 1 / vol
@@ -207,18 +198,17 @@ def model3():
         else:
             weights = weights_history.loc[:date].ffill().iloc[-1]
 
-        # Calculate daily portfolio return
+        # daily  return
         daily_return = (returns.loc[date] * weights).sum()
         portfolio_value.iloc[i] = portfolio_value.iloc[i - 1] * (1 + daily_return)
 
-        # Update maximum portfolio value
+        # update top portfolio value
         if portfolio_value.iloc[i] > max_portfolio_value:
             max_portfolio_value = portfolio_value.iloc[i]
 
-        # Calculate drawdown
+        # drawdown
         drawdown.iloc[i] = (portfolio_value.iloc[i] - max_portfolio_value) / max_portfolio_value
 
-        # Check maximum drawdown limit
         if drawdown.iloc[i] < -max_total_drawdown:
             print(f"Model 3: Max drawdown limit reached on {date.date()}. Exiting positions.")
             weights = pd.Series(0, index=assets)
@@ -226,19 +216,19 @@ def model3():
             weights_history.loc[date] = weights
             max_portfolio_value = portfolio_value.iloc[i]
 
-    # Drop NaN values
+    # Drop NaN's
     portfolio_value = portfolio_value.dropna()
     drawdown = drawdown.dropna()
     weights_history = weights_history.dropna()
 
-    # Performance Metrics
+    #performance 
     returns_series = portfolio_value.pct_change().dropna()
     sharpe_ratio = returns_series.mean() / returns_series.std() * np.sqrt(252)
     max_drawdown_value = (portfolio_value / portfolio_value.cummax() - 1).min()
     VaR_95 = returns_series.quantile(0.05)
     CVaR_95 = returns_series[returns_series <= VaR_95].mean()
 
-    # Store results
+    #  results
     results = {
         'Portfolio Value': portfolio_value,
         'Drawdown': drawdown,
@@ -254,8 +244,8 @@ def model3():
     return results
 
 # ==================================
-# Main Execution
-# ==================================
+#   Execution
+# ====================================
 
 if __name__ == "__main__":
     # Run models
@@ -263,10 +253,9 @@ if __name__ == "__main__":
     results_model2 = model2()
     results_model3 = model3()
 
-    # Visualization and Comparison
     print("\nComparing Models...")
 
-    # Plot Portfolio Values
+    # Plot Values
     plt.figure(figsize=(12, 6))
     plt.plot(results_model1['Portfolio Value'], label='Model 1')
     plt.plot(results_model2['Portfolio Value'], label='Model 2')
@@ -281,7 +270,7 @@ if __name__ == "__main__":
     # Plot Drawdowns
     plt.figure(figsize=(12, 6))
     plt.plot(results_model1['Drawdown'], label='Model 1')
-    # Calculate drawdown for Model 2
+    # Model 2 drawdiown
     cumulative_returns_model2 = results_model2['Portfolio Value']
     rolling_max_model2 = cumulative_returns_model2.cummax()
     drawdown_model2 = (cumulative_returns_model2 - rolling_max_model2) / rolling_max_model2
@@ -294,7 +283,7 @@ if __name__ == "__main__":
     plt.grid(True)
     plt.show()
 
-    # Print Comparison of Performance Metrics
+    # Comparison of Performance Metrics
     print("\nPerformance Comparison:")
     metrics = pd.DataFrame({
         'Model 1': {
@@ -320,5 +309,4 @@ if __name__ == "__main__":
     })
     print(metrics)
 
-    # Allow the user to tweak market conditions
     print("\nTo tweak market conditions, adjust the 'start_date', 'end_date', and other parameters at the beginning of the script and re-run it.")
